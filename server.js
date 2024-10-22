@@ -1,4 +1,4 @@
-// Required modules
+// BY BLUE DEMON
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 const express = require('express');
@@ -10,10 +10,12 @@ const calculate = require('./plugin/calculator');
 const getRiddle = require('./plugin/riddle');
 const getInspiration = require('./plugin/inspire');
 const { startDigitalClock } = require('./plugin/time');
-const { getQuestion } = require('./plugin/question'); // Import question plugin
+const { getQuestion } = require('./plugin/question');
+
 // Initialize Express app
 const app = express();
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 7000;
+
 // Initialize Telegram bot
 const token = config.telegramToken;
 const bot = new TelegramBot(token, { polling: true });
@@ -94,13 +96,14 @@ async function showFunctionOptions(chatId, startIndex) {
         { text: '📛 Get My ID', callback_data: 'get_telegram_id' },
         { text: '📂 Bot File', callback_data: 'open_bot_directory' },
         { text: '➕ Calculator', callback_data: 'calculate' },
+        { text: '👤 Chat Owner', url: 'https://t.me/DEMONXBOTS1' },
         { text: '🕒 Check Time', callback_data: 'check_time' },
         { text: '💡 Inspire Me', callback_data: 'inspire_me' },
         { text: '🐾 Animal Fact', callback_data: 'animal_fact' },
         { text: '🧩 Riddles', callback_data: 'riddle' },
         { text: '🪙 Flip a Coin', callback_data: 'flip_coin' },
         { text: '💱 Convert Currency', callback_data: 'convert_currency' },
-        { text: '📝 Start Quiz', callback_data: 'quiz' } // Added quiz option
+        { text: '📝 Start Quiz', callback_data: 'quiz' }
     ];
 
     const currentOptions = functions.slice(startIndex, startIndex + 6);
@@ -115,13 +118,11 @@ async function showFunctionOptions(chatId, startIndex) {
 
     await deletePreviousMessage(chatId);
 
-    // Send the image with the menu
     const photoMessage = await bot.sendPhoto(chatId, './media/menu.jpg', {
         caption: 'Choose a function:',
         reply_markup: { inline_keyboard: inlineKeyboard }
     });
 
-    // Save the last message ID
     lastMessages[chatId] = photoMessage.message_id;
 }
 
@@ -135,8 +136,8 @@ async function getTelegramId(chatId) {
 // Function to show bot names and their respective directories
 async function showBotNames(chatId) {
     const bots = [
-        { text: 'DEVIL SCRIPT', url: 'bots/DevilScript 5.0 Gen 3 fixx.zip' },
-        { text: 'DELTACRASH', url: 'bots/deltacrash. ℓσя∂ ткм.7z' }
+        { text: 'TECHGOD V9', url: 'https://www.mediafire.com/file/63mppszoab0la0a/techgod9.zip/file' },
+        { text: 'DELTACRASH', url: 'http://example.com/bots/deltacrash.7z' }
     ];
 
     const botButtons = bots.map(bot => [{ text: bot.text, url: bot.url }]);
@@ -150,26 +151,7 @@ async function showBotNames(chatId) {
     lastMessages[chatId] = message.message_id;
 }
 
-// Function to ask a question and get the correct answer
-async function askQuestion(chatId) {
-    const { question, options, answer } = getQuestion();
-    const optionsWithCallbackData = options.map((option) => {
-        return {
-            text: option,
-            callback_data: option.charAt(0) // Use the first character as the callback data (A, B, C, D)
-        };
-    });
-
-    const message = await bot.sendMessage(chatId, question, {
-        reply_markup: {
-            inline_keyboard: [optionsWithCallbackData]
-        }
-    });
-    lastMessages[chatId] = message.message_id;
-    return answer; // Return the correct answer for later comparison
-}
-
-// Function to handle the different actions
+// Function to handle different actions
 async function handleFunctions(chatId, action) {
     try {
         const responses = {
@@ -197,7 +179,7 @@ async function handleFunctions(chatId, action) {
             setTimeout(() => bot.sendMessage(chatId, `🧩 Answer: ${answer}`), 5000);
         } else if (action === 'quiz') {
             const correctAnswer = await askQuestion(chatId);
-            userStates[chatId].correctAnswer = correctAnswer; // Store the correct answer for later use
+            userStates[chatId].correctAnswer = correctAnswer;
         } else if (action === 'convert_currency') {
             await deletePreviousMessage(chatId);
             bot.sendMessage(chatId, 'Please enter the conversion in the format: `amount FROM TO` (e.g., `100 USD EUR`).');
@@ -223,7 +205,7 @@ bot.on('message', async (msg) => {
             await deletePreviousMessage(chatId);
             const message = await bot.sendMessage(chatId, `🧮 The result is: ${result} 🎉`);
             lastMessages[chatId] = message.message_id;
-            userStates[chatId].step = 0; // Reset the user step after calculation
+            userStates[chatId].step = 0;
         } catch (error) {
             await deletePreviousMessage(chatId);
             bot.sendMessage(chatId, `❌ ${error.message}`);
@@ -235,47 +217,64 @@ bot.on('message', async (msg) => {
             await deletePreviousMessage(chatId);
             const message = await bot.sendMessage(chatId, `💱 ${result}`);
             lastMessages[chatId] = message.message_id;
-            userStates[chatId].step = 0; // Reset the user step after conversion
+            userStates[chatId].step = 0;
         } catch (error) {
             await deletePreviousMessage(chatId);
-            bot.sendMessage(chatId, `❌ ${error.message}`);
+            bot.sendMessage(chatId, `❌ Error: ${error.message}`);
         }
-    } else if (userState && userState.correctAnswer) {
-        // Check if the answer to the quiz is correct
-        const userAnswer = msg.text.charAt(0); // Get the first character as the user's answer
-        if (userAnswer.toUpperCase() === userState.correctAnswer.toUpperCase()) {
-            await deletePreviousMessage(chatId);
-            const message = await bot.sendMessage(chatId, '✅ Correct answer! 🎉');
-            lastMessages[chatId] = message.message_id;
-        } else {
-            await deletePreviousMessage(chatId);
-            const message = await bot.sendMessage(chatId, `❌ Incorrect answer! The correct answer was: ${userState.correctAnswer}`);
-            lastMessages[chatId] = message.message_id;
-        }
-        // Clear the stored correct answer after responding
-        delete userStates[chatId].correctAnswer;
     }
 });
 
-// Function to convert currency
+// Function to convert currency using ExchangeRate API
 async function convertCurrency(chatId, amount, fromCurrency, toCurrency) {
     try {
-        const response = await axios.get(`https://v6.exchangerate-api.com/v6/43f31fb84c391ced11b216a4/pair/${fromCurrency}/${toCurrency}/${amount}`);
-        return `${amount} ${fromCurrency} is approximately ${response.data.conversion_result} ${toCurrency}`;
+        const apiKey = config.exchangeRateApiKey;
+        const response = await axios.get(`https://v6.exchangerate-api.com/v6/${apiKey}/pair/${fromCurrency}/${toCurrency}/${amount}`);
+        const conversion = response.data;
+        
+        if (conversion.result === "success") {
+            return `${amount} ${fromCurrency} is approximately ${conversion.conversion_result.toFixed(2)} ${toCurrency}.`;
+        } else {
+            throw new Error('Invalid currency or conversion request.');
+        }
     } catch (error) {
-        console.error('Error fetching currency conversion:', error);
-        throw new Error('Currency conversion failed. Please try again.');
+        console.error(`Error converting currency for chat ID ${chatId}:`, error);
+        throw new Error('Could not retrieve currency data. Please check your input and try again.');
     }
 }
 
-// Express server setup to keep the bot running
-app.get('/', (req, res) => {
-    res.send(`
-       
-    `);
+// Function to ask a quiz question
+async function askQuestion(chatId) {
+    const { question, answer } = getQuestion();
+    await deletePreviousMessage(chatId);
+    const message = await bot.sendMessage(chatId, `📝 ${question}`, {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Reveal Answer', callback_data: 'reveal_answer' }]
+            ]
+        }
+    });
+    lastMessages[chatId] = message.message_id;
+
+    // Store the correct answer temporarily
+    userStates[chatId].step = 'quiz';
+    return answer;
+}
+
+// Handle quiz answer reveal
+bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const action = query.data;
+
+    if (action === 'reveal_answer' && userStates[chatId]?.step === 'quiz') {
+        const correctAnswer = userStates[chatId].correctAnswer;
+        await deletePreviousMessage(chatId);
+        bot.sendMessage(chatId, `📝 The answer is: ${correctAnswer}`);
+        userStates[chatId].step = 0;
+    }
 });
 
 // Start the Express server
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running on port ${port}`);
 });
